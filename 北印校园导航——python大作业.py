@@ -2,14 +2,46 @@ import os
 import json
 import tkinter
 import turtle
-import urllib
-import urllib.request
 from collections import defaultdict
 from heapq import heappop, heappush
 from math import sqrt
 from tkinter import *
 from tkinter.ttk import Combobox
-from urllib.request import urlretrieve
+import requests
+
+
+def get_record(url):
+    """
+    通过url拿到json
+    :param url: json文件url
+    :return: json
+    """
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/17.17134'
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f'Failed to retrieve data from {url}. HTTP Status Code: {response.status_code}')
+        return None
+
+
+def download_file(url, local_filename):
+    """
+    下载文件
+    :param url: 下载文件url
+    :param local_filename: 文件名称
+    :return: 文件
+    """
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/17.17134'
+    }
+    with requests.get(url, headers=headers, stream=True) as r:
+        r.raise_for_status()  # Check if the request was successful
+        with open(local_filename, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
 
 
 # 从点str1移动到str2
@@ -69,16 +101,18 @@ def draw(value):
     # 图片URL
     url = 'https://randallanjie.com/json/bigc.png'
     filename = os.path.basename(url)
-    # 判断文件是否存在，如果不存在则下载
-    if not os.path.isfile(os.path.join("./", filename)):
+    local_path = os.path.join("./", filename)
+
+    # Check if the file already exists
+    if not os.path.isfile(local_path):
         try:
-            print("地图下载中：")
-            urlretrieve(url, './bigc.png', schedule)
-        except:
-            print('\n' + url + '下载失败！' + '\n')
+            print("地图下载中")
+            download_file(url, './bigc.png')
+        except Exception as e:
+            print(f'\n{url} 下载失败！\n{e}')
             tkinter.messagebox.showinfo('提示', '下载地图失败，请重试！')
         else:
-            print("\n地图下载完成！")
+            print("地图下载完成！")
     else:
         print("地图已经存在！")
     turtle.bgpic("./bigc.png")
@@ -141,13 +175,6 @@ def calc(a, b):
         draw(x)
     except turtle.Terminator:
         draw(x)
-
-
-# 将json文件转化为变量
-def get_record(url):
-    resp = urllib.request.urlopen(url)
-    ele_json = json.loads(resp.read())
-    return ele_json
 
 
 print("开始初始化")
